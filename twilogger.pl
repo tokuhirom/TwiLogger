@@ -1,4 +1,4 @@
-use 5.013002;
+use 5.010001;
 use strict;
 use warnings;
 
@@ -89,7 +89,8 @@ sub parse_json {
     $handle->push_read( json => \&parse_json );
 }
 
-package TwiLogger::Log {
+{
+    package TwiLogger::Log;
     use Time::Piece ();
     use IO::Handle;
 
