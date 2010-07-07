@@ -74,11 +74,13 @@ sub parse_json {
         $logger->write("removed $del->{status}->{id} by $del->{status}->{user_id}");
     }
     elsif ( $data->{text} ) {
+        my $text = $data->{text};
+        $text =~ s/\n/ /g;
         $logger->write(
             sprintf(
                 "%s: %s",
                 $data->{user}->{screen_name},
-                $data->{text},
+                $text,
             )
         );
     }
@@ -119,7 +121,7 @@ package TwiLogger::Log {
             $self->{date} = $now->ymd;
             $self->open_fh();
         }
-        my $header = $now->strftime('%Y-%m-%d %H:%M:%S: ');
+        my $header = $now->strftime('[%Y-%m-%d %H:%M:%S]');
         print {$self->{fh}} "$header $body\n";
     }
 };
