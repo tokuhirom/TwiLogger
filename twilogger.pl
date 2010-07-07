@@ -83,7 +83,7 @@ sub parse_json {
         );
     }
     else {
-        $logger->write( "%s", JSON->new->pretty->encode($data) );
+        $logger->write( JSON->new->pretty->encode($data) );
     }
     $handle->push_read( json => \&parse_json );
 }
