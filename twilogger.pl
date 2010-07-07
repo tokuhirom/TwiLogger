@@ -119,5 +119,9 @@ __END__
 
 =head1 SYNOPSIS
 
-    % twilogger.pl -p '/path/to/log/%Y-%m-%d.txt'
+    % twilogger.pl -p '/path/to/log/%Y-%m-%d.txt' -c config.ini
+
+    in your config.ini:
+    username=foo
+    password=passw03d
 
