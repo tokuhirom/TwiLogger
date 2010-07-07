@@ -62,13 +62,12 @@ sub run_http_get {
 sub parse_json {
     my ( $handle, $data ) = @_;
     if ( $data->{event} ) {
-        $logger->write("event: $data->{event}");
-#       try {
-#           do_event($data);
-#       }
-#       catch {
-#           error(@_);
-#       };
+        # nop.
+        # $logger->write("event: $data->{event}");
+    }
+    elsif ( $data->{friends} ) {
+        # nop
+        # $logger->write("friends: $data->{friends}");
     }
     elsif ( my $del = $data->{delete} ) {
         $logger->write("removed $del->{status}->{id} by $del->{status}->{user_id}");
