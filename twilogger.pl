@@ -32,6 +32,12 @@ my $logger = TwiLogger::Log->new($path);
 &main;exit;
 
 sub main {
+    run_http_get();
+
+    AE::cv->recv; # run main loop
+}
+
+sub run_http_get {
     http_get "http://chirpstream.twitter.com/2b/user.json",
         headers => {
             Authorization => encode_base64( $config->{username} . ":" . $config->{password} ),
@@ -43,11 +49,14 @@ sub main {
         want_body_handle => 1,    # for some reason on_body => sub {} doesn't work :/
         sub {
             my ( $handle, $headers ) = @_;
-            print "parsing\n";
-            $handle->push_read( json => \&parse_json );
+            if ($headers->{Status} eq '599') {
+                print "unknown error: reconnecting...($headers->{Reason})\n";
+                run_http_get();
+            } else {
+                print "parsing: $headers->{Status}\n";
+                $handle->push_read( json => \&parse_json );
+            }
         };
-
-    AE::cv->recv; # run main loop
 }
 
 sub parse_json {
