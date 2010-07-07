@@ -1,9 +1,15 @@
 use inc::Module::Install;
 name 'TwiLogger';
 all_from 'lib/TwiLogger.pm';
+use 5.008001;
 
-# requires '';
-
+requires 'AnyEvent::HTTP';
+requires 'AE';
+requires 'Try::Tiny';
+requires 'Config::Tiny';
+requires 'MIME::Base64';
+requires 'JSON';
+requires 'autodie';
 
 readme_markdown_from 'lib/TwiLogger.pm';
 tests 't/*.t t/*/*.t t/*/*/*.t t/*/*/*/*.t';
