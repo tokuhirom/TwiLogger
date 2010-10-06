@@ -2,7 +2,7 @@ use 5.008001;
 use strict;
 use warnings;
 
-use AnyEvent::Twitter::Stream;
+use AnyEvent::Twitter::Stream 0.20;
 use AE;
 use Data::Dumper;
 use Try::Tiny;
@@ -12,7 +12,7 @@ use JSON;
 use Getopt::Long;
 use Pod::Usage;
 use autodie;
-use Net::Twitter::Lite;
+use Net::Twitter::Lite 0.10003;
 
 
 $|=1;
