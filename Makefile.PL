@@ -3,12 +3,13 @@ name 'TwiLogger';
 all_from 'lib/TwiLogger.pm';
 
 requires 'JSON' => 2.21;
-requires 'AnyEvent::HTTP' => 1.45;
 requires 'MIME::Base64';
 requires 'autodie';
 requires 'Config::Tiny';
 requires 'Try::Tiny';
 requires 'AE' => 5.271;
+requires 'Net::Twitter::Lite';
+requires 'AnyEvent::Twitter::Stream';
 
 readme_markdown_from 'lib/TwiLogger.pm';
 tests 't/*.t t/*/*.t t/*/*/*.t t/*/*/*/*.t';
