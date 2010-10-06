@@ -1,4 +1,4 @@
-use 5.010001;
+use 5.008001;
 use strict;
 use warnings;
 
@@ -68,10 +68,10 @@ sub main {
         token_secret    => $config->{token_secret} // die,
         method          => 'userstream',
         on_connect      => sub {
-            say "connected";
+            print "connected\n";
         },
         on_error => sub {
-            say "error occurred : @_";
+            print "error occurred : @_\n";
         },
         on_tweet => sub {
             my $tweet = shift;
