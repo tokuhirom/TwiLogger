@@ -43,7 +43,7 @@ unless ($config->{token}) {
     $config_obj->write($conffname);
     $config = $config_obj->{_};
 }
-for (qw/username password consumer_key consumer_secret token token_secret/) {
+for (qw/consumer_key consumer_secret token token_secret/) {
     die "$_ not found in $conffname" unless $config->{$_}
 }
 {
@@ -134,6 +134,9 @@ __END__
     % twilogger.pl -p '/path/to/log/%Y-%m-%d.txt' -c config.ini
 
     in your config.ini:
-    username=foo
-    password=passw03d
+    consumer_key=XXXX
+    consumer_secret=XXXX
+
+    # you can get OAuth consumer_key and consumer_secret from
+    #  http://dev.twitter.com/
 
