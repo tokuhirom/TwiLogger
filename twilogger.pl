@@ -14,6 +14,8 @@ use Pod::Usage;
 use autodie;
 use Net::Twitter::Lite;
 
+
+$|=1;
 binmode *STDOUT, ':utf8';
 
 my $conffname = 'config.ini';
@@ -73,10 +75,10 @@ sub main {
         },
         on_tweet => sub {
             my $tweet = shift;
-            my $text  = $tweet->{text};
-            $text =~ s/\n/ /g;
-            $logger->write(
-                sprintf( "%s: %s", $tweet->{user}->{screen_name}, $text, ) );
+            if (my $text  = $tweet->{text}) {
+                $text =~ s/\n/ /g;
+                $logger->write( sprintf( "%s: %s", $tweet->{user}->{screen_name}, $text, ) );
+            }
         },
         on_delete => sub {
             my ( $tweet_id, $user_id ) = @_;
