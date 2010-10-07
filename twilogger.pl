@@ -1,8 +1,8 @@
-use 5.013002;
+use 5.008001;
 use strict;
 use warnings;
 
-use AnyEvent::HTTP;
+use AnyEvent::Twitter::Stream 0.20;
 use AE;
 use Data::Dumper;
 use Try::Tiny;
@@ -12,6 +12,11 @@ use JSON;
 use Getopt::Long;
 use Pod::Usage;
 use autodie;
+use Net::Twitter::Lite 0.10003;
+
+
+$|=1;
+binmode *STDOUT, ':utf8';
 
 my $conffname = 'config.ini';
 GetOptions(
@@ -21,10 +26,34 @@ GetOptions(
 die "$conffname not found" unless -f $conffname;
 pod2usage() unless $path;
 
-my $config = Config::Tiny->read($conffname);
-$config = $config->{_};
-for (qw/username password/) {
+my $config_obj = Config::Tiny->read($conffname);
+my $config = $config_obj->{_};
+unless ($config->{token}) {
+    my $nt = Net::Twitter::Lite->new(
+        consumer_key    => $config->{consumer_key},
+        consumer_secret => $config->{consumer_secret}
+    );
+    my $auth_url = $nt->get_authorization_url();
+    print " Authorize this application at: $auth_url\nThen, enter the PIN# provided to continue: ";
+    my $pin = <STDIN>; # wait for input
+    chomp $pin;
+    my @access_tokens = $nt->request_access_token(verifier => $pin);
+    $config_obj->{_}->{token} = $access_tokens[0];
+    $config_obj->{_}->{token_secret} = $access_tokens[1];
+    $config_obj->write($conffname);
+    $config = $config_obj->{_};
+}
+for (qw/consumer_key consumer_secret token token_secret/) {
     die "$_ not found in $conffname" unless $config->{$_}
+}
+{
+    my $nt = Net::Twitter::Lite->new(
+        consumer_key    => $config->{consumer_key},
+        consumer_secret => $config->{consumer_secret},
+    );
+    $nt->access_token($config->{token});
+    $nt->access_token_secret($config->{token_secret});
+    # say eval { $nt->user_timeline({ count => 1 })->[0]->{text} };
 }
 
 my $logger = TwiLogger::Log->new($path);
@@ -32,64 +61,37 @@ my $logger = TwiLogger::Log->new($path);
 &main;exit;
 
 sub main {
-    run_http_get();
+    my $listener = AnyEvent::Twitter::Stream->new(
+        consumer_key    => $config->{consumer_key} // die,
+        consumer_secret => $config->{consumer_secret} // die,
+        token           => $config->{token} // die,
+        token_secret    => $config->{token_secret} // die,
+        method          => 'userstream',
+        on_connect      => sub {
+            print "connected\n";
+        },
+        on_error => sub {
+            print "error occurred : @_\n";
+        },
+        on_tweet => sub {
+            my $tweet = shift;
+            if (my $text  = $tweet->{text}) {
+                $text =~ s/\n/ /g;
+                $logger->write( sprintf( "%s: %s", $tweet->{user}->{screen_name}, $text, ) );
+            }
+        },
+        on_delete => sub {
+            my ( $tweet_id, $user_id ) = @_;
+            $logger->write("removed ${tweet_id} by ${user_id}");
+        },
+        timeout => 45,
+    );
 
     AE::cv->recv; # run main loop
 }
 
-sub run_http_get {
-    http_get "http://chirpstream.twitter.com/2b/user.json",
-        headers => {
-            Authorization => encode_base64( $config->{username} . ":" . $config->{password} ),
-        },
-        on_header => sub {
-            my ($headers) = @_;
-            # print Dumper $headers;
-        },
-        want_body_handle => 1,    # for some reason on_body => sub {} doesn't work :/
-        sub {
-            my ( $handle, $headers ) = @_;
-            if ($headers->{Status} eq '599') {
-                print "unknown error: reconnecting...($headers->{Reason})\n";
-                run_http_get();
-            } else {
-                print "parsing: $headers->{Status}\n";
-                $handle->push_read( json => \&parse_json );
-            }
-        };
-}
-
-sub parse_json {
-    my ( $handle, $data ) = @_;
-    if ( $data->{event} ) {
-        # nop.
-        # $logger->write("event: $data->{event}");
-    }
-    elsif ( $data->{friends} ) {
-        # nop
-        # $logger->write("friends: $data->{friends}");
-    }
-    elsif ( my $del = $data->{delete} ) {
-        $logger->write("removed $del->{status}->{id} by $del->{status}->{user_id}");
-    }
-    elsif ( $data->{text} ) {
-        my $text = $data->{text};
-        $text =~ s/\n/ /g;
-        $logger->write(
-            sprintf(
-                "%s: %s",
-                $data->{user}->{screen_name},
-                $text,
-            )
-        );
-    }
-    else {
-        $logger->write( JSON->new->pretty->encode($data) );
-    }
-    $handle->push_read( json => \&parse_json );
-}
-
-package TwiLogger::Log {
+{
+    package TwiLogger::Log;
     use Time::Piece ();
     use IO::Handle;
 
@@ -132,6 +134,9 @@ __END__
     % twilogger.pl -p '/path/to/log/%Y-%m-%d.txt' -c config.ini
 
     in your config.ini:
-    username=foo
-    password=passw03d
+    consumer_key=XXXX
+    consumer_secret=XXXX
+
+    # you can get OAuth consumer_key and consumer_secret from
+    #  http://dev.twitter.com/
 
